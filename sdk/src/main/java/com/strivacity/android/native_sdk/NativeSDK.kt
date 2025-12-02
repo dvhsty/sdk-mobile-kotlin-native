@@ -1,7 +1,6 @@
 package com.strivacity.android.native_sdk
 
 import android.content.Context
-import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
 import com.strivacity.android.native_sdk.render.FallbackHandler
@@ -25,20 +24,19 @@ import kotlinx.coroutines.withContext
 
 class NativeSDK
 internal constructor(
-  private val issuer: String,
-  private val clientId: String,
-  private val redirectURI: String,
-  private val postLogoutURI: String,
-  val session: Session,
-  private val httpService: HttpService = HttpService(),
-  private val mode: SdkMode = SdkMode.Android,
-  private val dispatchers: SDKDispatchers = DefaultSDKDispatchers,
-  private val clock: Clock = Clock.systemUTC(),
-  oidcHandlerServiceOverride: OIDCHandlerService? = null,
+    private val issuer: String,
+    private val clientId: String,
+    private val redirectURI: String,
+    private val postLogoutURI: String,
+    val session: Session,
+    private val mode: SdkMode = SdkMode.Android,
+    private val dispatchers: SDKDispatchers = DefaultSDKDispatchers,
+    private val clock: Clock = Clock.systemUTC(),
+    private val logging: Logging = DefaultLogging(),
+    private val httpService: HttpService = HttpService(logging = logging),
+    private val oidcHandlerService: OIDCHandlerService =
+        OIDCHandlerService(httpService = httpService, logging = logging),
 ) {
-
-  private val oidcHandlerService: OIDCHandlerService =
-      oidcHandlerServiceOverride ?: OIDCHandlerService(httpService)
 
   constructor(
       issuer: String,
@@ -47,6 +45,7 @@ internal constructor(
       postLogoutURI: String,
       storage: Storage,
       mode: SdkMode = SdkMode.Android,
+      logging: Logging = DefaultLogging(),
   ) : this(
       issuer = issuer,
       clientId = clientId,
@@ -54,6 +53,7 @@ internal constructor(
       postLogoutURI = postLogoutURI,
       session = Session(storage),
       mode = mode,
+      logging = logging,
   )
 
   var loginController: LoginController? = null
@@ -216,7 +216,7 @@ internal constructor(
         try {
           oidcHandlerService.handleCall(url)
         } catch (e: Error) {
-          Log.d("NativeSDK", "Failed to call logout endpoint", e)
+          logging.debug("Failed to call logout endpoint", e)
         }
       }
 

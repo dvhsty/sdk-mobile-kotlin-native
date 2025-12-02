@@ -2,6 +2,7 @@ package com.strivacity.android.native_sdk.service
 
 import com.strivacity.android.native_sdk.Error
 import com.strivacity.android.native_sdk.HttpError
+import com.strivacity.android.native_sdk.Logging
 import com.strivacity.android.native_sdk.util.OIDCParamGenerator
 import io.ktor.client.call.body
 import io.ktor.client.statement.request
@@ -13,7 +14,10 @@ import io.ktor.http.parameters
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-internal class OIDCHandlerService(private val httpService: HttpService) {
+internal class OIDCHandlerService(
+    private val httpService: HttpService,
+    private val logging: Logging,
+) {
 
   suspend fun handleCall(url: Url): Parameters {
     val location: Url
@@ -42,22 +46,26 @@ internal class OIDCHandlerService(private val httpService: HttpService) {
   }
 
   suspend fun tokenExchange(url: String, tokenExchangeParams: TokenExchangeParams): TokenResponse {
+    logging.debug("Attempting token exchange")
     val httpResponse = httpService.postForm(url, tokenExchangeParams.toParameters())
 
     if (httpResponse.status.value != 200) {
+      logging.info("Token exchange failed with status code ${httpResponse.status.value}")
       throw HttpError(statusCode = httpResponse.status.value)
     }
-
+    logging.info("Token exchange succeeded")
     return httpResponse.body()
   }
 
   suspend fun tokenRefresh(url: String, tokenRefreshParams: TokenRefreshParams): TokenResponse {
+    logging.debug("Attempting token refresh")
     val httpResponse = httpService.postForm(url, tokenRefreshParams.toParameters())
 
     if (httpResponse.status.value != 200) {
+      logging.info("Token refresh failed with status code ${httpResponse.status.value}")
       throw HttpError(statusCode = httpResponse.status.value)
     }
-
+    logging.info("Token refresh succeeded")
     return httpResponse.body()
   }
 }
