@@ -1,5 +1,6 @@
 package com.strivacity.android.native_sdk.service
 
+import com.strivacity.android.native_sdk.Logging
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.android.Android
@@ -20,7 +21,10 @@ import java.util.Locale
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-internal class HttpService(clientEngine: HttpClientEngine = Android.create()) {
+internal class HttpService(
+    private val logging: Logging,
+    clientEngine: HttpClientEngine = Android.create(),
+) {
   private val client =
       HttpClient(clientEngine) {
         install(ContentNegotiation) {
@@ -28,7 +32,8 @@ internal class HttpService(clientEngine: HttpClientEngine = Android.create()) {
               Json {
                 ignoreUnknownKeys = true
                 explicitNulls = false
-              })
+              }
+          )
         }
         install(HttpCookies)
       }
@@ -37,6 +42,7 @@ internal class HttpService(clientEngine: HttpClientEngine = Android.create()) {
       url: Url,
       acceptHeader: ContentType = ContentType.Application.Json,
   ): HttpResponse {
+    logging.debug("HTTP GET: ${url.encodedPath}")
     return client.get(url) { accept(acceptHeader) }
   }
 
@@ -46,6 +52,7 @@ internal class HttpService(clientEngine: HttpClientEngine = Android.create()) {
       body: JsonObject? = null,
       acceptHeader: ContentType = ContentType.Application.Json,
   ): HttpResponse {
+    logging.debug("HTTP POST: ${url.encodedPath}")
     return client.post(url) {
       accept(acceptHeader)
       contentType(ContentType.Application.Json)
@@ -62,6 +69,7 @@ internal class HttpService(clientEngine: HttpClientEngine = Android.create()) {
       body: Parameters,
       acceptHeader: ContentType = ContentType.Application.Json,
   ): HttpResponse {
+    logging.debug("HTTP POST: ${Url(url).encodedPath}")
     return client.submitForm(url = url, formParameters = body) { accept(acceptHeader) }
   }
 }

@@ -1,5 +1,6 @@
 package com.strivacity.android.native_sdk.service
 
+import FakeLogging
 import com.strivacity.android.native_sdk.HttpError
 import com.strivacity.android.native_sdk.SessionExpiredError
 import com.strivacity.android.native_sdk.mocks.fakeInitResponsePayload
@@ -16,7 +17,8 @@ import org.junit.Test
 class LoginHandlerServiceTest {
   @Test
   fun initCall_shouldThrowSessionExpiredError_whenStatusIs403() {
-    val service = HttpService(MockEngine { respond("", HttpStatusCode.Forbidden) })
+    val service =
+        HttpService(logging = FakeLogging(), MockEngine { respond("", HttpStatusCode.Forbidden) })
     val handlerService = LoginHandlerService(service, "https://localhost/", "test-session-id")
 
     assertThrows(SessionExpiredError::class.java) { runBlocking { handlerService.initCall() } }
@@ -24,7 +26,11 @@ class LoginHandlerServiceTest {
 
   @Test
   fun initCall_shouldThrowHttpError_whenStatusIs500() {
-    val service = HttpService(MockEngine { respond("", HttpStatusCode.InternalServerError) })
+    val service =
+        HttpService(
+            logging = FakeLogging(),
+            MockEngine { respond("", HttpStatusCode.InternalServerError) },
+        )
     val handlerService = LoginHandlerService(service, "https://localhost/", "test-session-id")
     assertThrows(HttpError::class.java) { runBlocking { handlerService.initCall() } }
   }
@@ -33,13 +39,14 @@ class LoginHandlerServiceTest {
   fun submitForm_shouldReturnBody() = runTest {
     val service =
         HttpService(
+            logging = FakeLogging(),
             MockEngine {
               respond(
                   fakeInitResponsePayload,
                   HttpStatusCode.OK,
                   headers { set(HttpHeaders.ContentType, "application/json") },
               )
-            }
+            },
         )
     val handlerService = LoginHandlerService(service, "https://localhost/", "test-session-id")
     val screen = handlerService.submitForm("test-form-id", body = mapOf())
@@ -49,12 +56,13 @@ class LoginHandlerServiceTest {
   fun submitForm_shouldThrowSessionExpiredError_whenStatusIs403() = runTest {
     val service =
         HttpService(
+            logging = FakeLogging(),
             MockEngine {
               respond(
                   "",
                   HttpStatusCode.Forbidden,
               )
-            }
+            },
         )
     val handlerService = LoginHandlerService(service, "https://localhost/", "test-session-id")
     assertThrows(SessionExpiredError::class.java) {
@@ -66,12 +74,13 @@ class LoginHandlerServiceTest {
   fun submitForm_shouldThrowHttpError_whenStatusIs500() {
     val service =
         HttpService(
+            logging = FakeLogging(),
             MockEngine {
               respond(
                   "",
                   HttpStatusCode.InternalServerError,
               )
-            }
+            },
         )
     val handlerService = LoginHandlerService(service, "https://localhost/", "test-session-id")
     assertThrows(HttpError::class.java) {
